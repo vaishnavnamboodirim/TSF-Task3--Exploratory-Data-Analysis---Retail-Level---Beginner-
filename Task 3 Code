@@ -1,0 +1,136 @@
+Exploratory Data Analysis - Retail (Level - Beginner)
+Perform ‘Exploratory Data Analysis’ on dataset ‘SampleSuperstore’
+● As a business manager, try to find out the weak areas where you can
+work to make more profit.
+● What all business problems you can derive by exploring the data?
+
+
+options(repos = c(CRAN = 'https://cloud.r-project.org'))
+install.packages('dplyr', repos = 'https://cloud.r-project.org')
+install.packages("readxl")
+library(readxl)
+install.packages("thePackage")
+install.packages("tidyverse")
+install.packages("dplyr")
+library(tidyverse)
+library(dplyr)
+rm(list = ls())
+library(data.table)
+library(tibble)
+library(ggplot2)
+library(tidyr)
+setwd("C:/Users/acer/Desktop/DataAnalytics")
+getwd()
+data <- fread("SampleSuperstore.csv")
+theme_set(theme_bw())
+theme_update(plot.title = element_text(hjust = 0.5))
+
+list_na <- colnames(data)[apply(data,2,anyNA)]
+list_na %>% na.omit()
+
+glimpse(data)
+head(data)
+install.packages("funModeling")
+library(lubridate)
+library(funModeling)
+df_status(data)
+plot_num(data)
+profiling_num(data)
+freq(data)
+describe(data)
+data_gp<-as.data.frame(data %>% group_by(Region) %>% summarise(TOT_SALES = sum(Sales),.groups= "drop"))
+data_gp %>% distinct()
+plot(factor(State) ~ Sales, data=data)
+label_data <- data_gp
+p<-ggplot(data=data_gp, aes(x=as.factor(data_gp$Region), y= TOT_SALES)) + geom_bar(stat = "identity") +coord_polar(start = 0)+ geom_text(data = label_data,aes(x=as.factor(data_gp$Region), y= TOT_SALES,label=data_gp$Region)) + theme_minimal()
+p + scale_y_continuous(labels =function(y) format(y,scientific = FALSE))
+str(data)
+data[1,1]
+data[1,5]
+
+
+number_of_bar <- nrow(label_data)
+number_of_bar
+as.numeric(gsub(",","",x,fixed=TRUE))
+label_data$State<-factor(label_data$State)
+label_data$State<-as.numeric(label_data$State)
+
+angle <-  90 - 360 * label_data$State /number_of_bar    
+
+
+# calculate the alignment of labels: right or left
+# If I am on the left part of the plot, my labels have currently an angle < -90
+label_data$hjust<-ifelse( angle < -90, 1, 0)
+
+# flip angle BY to make them readable
+label_data$angle<-ifelse(angle < -90, angle+180, angle)
+
+
+
+p <- ggplot(data_gp, aes(x=as.factor(State), y=TOT_SALES)) +
+  geom_bar(stat="identity", fill=alpha("skyblue", 0.7)) +
+  ylim(-100,120) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-1,4), "cm")  ) +
+  coord_polar(start = 0) +
+  geom_text(data=label_data, aes(x=as.factor(State), y=TOT_SALES, label=as.factor(State), hjust=hjust), color="black", fontface="bold",alpha=0.6, size=2.5, angle= label_data$angle, inherit.aes = FALSE ) 
+
+p  
+
+barplot(height=data_gp$TOT_SALES, names=data_gp$City, col=rainbow(7),las=2)
+data_city<-as.data.frame(data %>% group_by(City) %>% summarise(TOT_SALES = sum(Sales),.groups= "drop"))
+head(data_city)
+
+data_city %>% arrange(desc(TOT_SALES))
+k<-data_city %>% top_n(20) 
+barplot(height=k$TOT_SALES, names=k$City, col=rainbow(7),las=2)
+d<-data_city %>% slice_min(City, n=20) 
+head(k)
+barplot(height=k$TOT_SALES, names=k$City, col=rainbow(7),las=2)
+
+data_TotprofitQuan <- data %>% group_by(Region,State) %>% summarise(TotProfit=sum(Profit),TotQuatity=sum(Quantity)) 
+head(data_TotprofitQuan)
+
+data_west <- data %>% filter(Region=="West") %>% group_by(State) %>% summarise(TotProfit=sum(Profit))
+barplot(height=data_west$TotProfit, names=data_west$State, col=rainbow(7),las=2)
+head(data_west)
+
+
+data_west_category <- data %>% filter(Region=="West",Category=="Technology") %>% group_by(Category,`Sub-Category`) %>% summarise(TotProfit=sum(Profit))
+barplot(height=data_west_category$TotProfit, names=data_west_category$`Sub-Category`, col=rainbow(7),las=2)
+head(data_west)
+
+data_west  <- data %>% filter(Region=="West")
+data_west <- data %>% filter(Region=="West") %>% group_by(Region,Category,`Sub-Category`) %>% summarise(TotProfit=sum(Profit))
+barplot(height=data_west$TotProfit, names=data_west$State, col=rainbow(7),las=2)
+head(data_west)
+library(viridis)
+library(hrbrthemes)
+
+ggplot(data_west, aes( fill=data_west$`Sub-Category`, y=data_west$TotProfit, x=data_west$`Sub-Category`)) + 
+  geom_bar(position="dodge", stat="identity") +
+  scale_fill_viridis(discrete = T, option = "E") +
+  ggtitle("Profit by Sub-Category ") +
+  facet_wrap(~Category) +
+  theme_ipsum() +
+  theme(axis.text.x = element_text(angle=90,hjust=0.5,vjust=0.5,size = 7))+
+  xlab("") +
+  facet_grid(~Category,space = "free",scales="free")
+  
+ggplot(data_TotprofitQuan, aes( y=data_TotprofitQuan$TotProfit, x=data_TotprofitQuan$State)) + 
+  geom_bar(position="dodge", stat="identity",fill="#FF6666") +
+  scale_fill_viridis(discrete = T, option = "E") +
+  ggtitle("Profit by States") +
+  facet_wrap(~Region) +
+  theme_ipsum() +
+  theme(axis.text.x = element_text(angle=90,hjust=0.5,vjust=0.5,size = 7))+
+  xlab("") +
+  facet_grid(~Region,space = "free",scales="free")
+
+data_city<-data %>% group_by(City) %>% summarise(TotProfit=sum(Profit)) %>% arrange(desc(TotProfit))
+barplot(height=data_city[1:30,]$TotProfit, names=data_city[1:30,]$City, col=rainbow(7),las=2)
+
